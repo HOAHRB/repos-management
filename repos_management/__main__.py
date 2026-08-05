@@ -175,9 +175,7 @@ def build_parser() -> argparse.ArgumentParser:
     repos_sp = repos.add_subparsers(dest="command", required=True)
 
     fetch = repos_sp.add_parser("fetch", help="Fetch org repos into repos_list.txt")
-    fetch.add_argument(
-        "--org", default=None, help="GitHub org name (default from ORG_NAME env/.env)"
-    )
+    fetch.add_argument("--org", default="HOAHRB-Courses", help="GitHub org name")
     fetch.add_argument(
         "--token",
         default=None,
@@ -192,7 +190,7 @@ def build_parser() -> argparse.ArgumentParser:
     trigger = wf_sp.add_parser(
         "trigger", help="Trigger workflow_dispatch in all course repos"
     )
-    trigger.add_argument("--org", default="HITSZ-OpenAuto", help="GitHub org")
+    trigger.add_argument("--org", default="HOAHRB-Courses", help="GitHub org")
     trigger.add_argument(
         "--repos-file",
         default=str(DEFAULT_REPOS_LIST),
