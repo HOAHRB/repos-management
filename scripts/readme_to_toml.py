@@ -25,6 +25,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover (Python <= 3.10)
+    import tomli as tomllib  # type: ignore
+
 # For writing TOML
 try:
     import tomli_w  # type: ignore
@@ -60,10 +65,13 @@ class SectionItem:
     topic: str = ""  # From <!-- TOML-ITEM: topic="..." -->
     has_author: bool = False  # From <!-- TOML-ITEM: has_author="true" -->
     author_is_list: bool = False  # From <!-- TOML-ITEM: author_type="list" -->
+    source: str = ""
 
     def to_toml(self) -> dict:
         """Convert to TOML dict format."""
         result = {}
+        if self.source:
+            result["source"] = self.source
         if self.content:
             result["content"] = self.content
         if self.topic:
@@ -146,6 +154,10 @@ class Course:  # For multi-project schema
     reviews: list[SectionItem] = field(default_factory=list)
     teachers: list[Lecturer] = field(default_factory=list)
     sections: list[Section] = field(default_factory=list)
+    credits: str = ""
+    hours: str = ""
+    grading: str = ""
+    automatic_grade_item: SectionItem | None = None
 
     def to_toml(self) -> dict:
         """Convert to TOML dict format."""
@@ -183,6 +195,7 @@ class Document:
     credits: str = ""
     hours: str = ""
     grading: str = ""
+    automatic_grade_item: SectionItem | None = None
 
 
 # ============================================================================
@@ -456,16 +469,15 @@ class MarkdownParser:
                 self.pos = i + 1
                 return
 
-    def _parse_badges(self):
+    def _parse_badges(self, target: Document | Course | None = None) -> None:
         """Parse shields.io badges.
 
-        Badges marked with ``<!-- TOML-BADGES: source="grades_summary" -->``
-        come from an external grades_summary.toml and should NOT be written
-        back to the course TOML (they are regenerated on every forward pass).
         Only badges from ``source="basic_info"`` (or unmarked legacy badges)
-        are persisted to the ``基本信息`` section in TOML.
+        are reconstructed. Automatic ``grades_summary`` badges are preserved
+        from the existing TOML before a reverse overwrite.
         """
-        badges = []
+        target = target or self.doc
+        badges_by_source: dict[str, list[tuple[str, str, str, str]]] = {}
         badge_source = "basic_info"  # default for legacy / unmarked READMEs
 
         for i in range(self.pos, len(self.lines)):
@@ -485,7 +497,9 @@ class MarkdownParser:
                 alt = m.group(1)
                 url = m.group(2)
                 label, message, color = parse_badge_url(url)
-                badges.append((alt, label, message, color))
+                badges_by_source.setdefault(badge_source, []).append(
+                    (alt, label, message, color)
+                )
                 self.pos = i + 1
                 continue
 
@@ -494,22 +508,25 @@ class MarkdownParser:
 
             self.pos = i + 1
 
-        # Skip storing badge data if they come from external grades_summary
-        if badge_source == "grades_summary":
-            return
-
-        for _alt, label, message, _color in badges:
+        badge_group = ""
+        for _alt, label, message, _color in badges_by_source.get("basic_info", []):
             if label == "学分":
-                self.doc.credits = message
+                target.credits = message
             elif label in ("学时构成", "学时分布"):
-                self.doc.hours = message
+                badge_group = "hours"
             elif label == "成绩构成":
-                pass
+                badge_group = "grading"
             elif message:
-                if self.doc.grading:
-                    self.doc.grading += f" | {label} {message}"
+                value = f"{label} {message}"
+                if badge_group == "hours":
+                    if target.hours:
+                        target.hours += f" | {value}"
+                    else:
+                        target.hours = value
+                elif target.grading:
+                    target.grading += f" | {value}"
                 else:
-                    self.doc.grading = f"{label} {message}"
+                    target.grading = value
 
     def _parse_description(self):
         """Parse description paragraphs before first H2."""
@@ -1049,15 +1066,22 @@ class MarkdownParser:
                         current_course.code = m.group(1)
                         current_course.name = m.group(2)
                         self.pos += 1
-                        continue
-
-                # Fallback: split header on ' - '
-                parts = header.split(" - ", 1)
-                if len(parts) == 2:
-                    current_course.code = parts[0].strip()
-                    current_course.name = parts[1].strip()
+                    else:
+                        # Fallback: split header on ' - '
+                        parts = header.split(" - ", 1)
+                        if len(parts) == 2:
+                            current_course.code = parts[0].strip()
+                            current_course.name = parts[1].strip()
+                        else:
+                            current_course.name = header
                 else:
-                    current_course.name = header
+                    parts = header.split(" - ", 1)
+                    if len(parts) == 2:
+                        current_course.code = parts[0].strip()
+                        current_course.name = parts[1].strip()
+                    else:
+                        current_course.name = header
+                self._parse_badges(current_course)
                 continue
 
             if line.startswith("### ") and current_course is not None:
@@ -1311,6 +1335,60 @@ class MarkdownParser:
 # ============================================================================
 
 
+def _automatic_grade_item(scope: object, scope_name: str) -> SectionItem | None:
+    if not isinstance(scope, dict):
+        return None
+
+    matches: list[dict[str, object]] = []
+    sections = scope.get("sections")
+    if not isinstance(sections, list):
+        return None
+    for section in sections:
+        if not isinstance(section, dict) or section.get("title") != "基本信息":
+            continue
+        items = section.get("items")
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if isinstance(item, dict) and item.get("source") == "grades_summary":
+                matches.append(item)
+
+    if len(matches) > 1:
+        raise ValueError(f"{scope_name} has multiple automatic grade items")
+    if not matches:
+        return None
+
+    content = matches[0].get("content")
+    if not isinstance(content, str):
+        raise ValueError(f"{scope_name} automatic grade item has no content")
+    return SectionItem(content=content, source="grades_summary")
+
+
+def preserve_automatic_grade_items(doc: Document, existing_toml: str) -> None:
+    """Keep source-marked automatic grades across a README-to-TOML overwrite."""
+
+    existing = tomllib.loads(existing_toml)
+    if doc.repo_type != "multi-project":
+        doc.automatic_grade_item = _automatic_grade_item(existing, "course")
+        return
+
+    existing_courses = existing.get("courses") if isinstance(existing, dict) else None
+    if not isinstance(existing_courses, list):
+        return
+    for course in doc.courses:
+        matches = [
+            candidate
+            for candidate in existing_courses
+            if isinstance(candidate, dict) and candidate.get("code") == course.code
+        ]
+        if len(matches) > 1:
+            raise ValueError(f"course {course.code!r} appears more than once")
+        if matches:
+            course.automatic_grade_item = _automatic_grade_item(
+                matches[0], f"course {course.code!r}"
+            )
+
+
 def format_toml_string(s: str) -> str:
     """Format a string for TOML output."""
     if not s:
@@ -1374,6 +1452,33 @@ def generate_toml(doc: Document) -> str:
             if course.code:
                 lines.append(f"code = {format_toml_string(course.code)}")
 
+            course_basic_info_items = []
+            if course.credits:
+                course_basic_info_items.append(f"【学分】: {course.credits}")
+            if course.hours:
+                course_basic_info_items.append(f"【学时构成】: {course.hours}")
+            if course.grading:
+                course_basic_info_items.append(f"【成绩构成】: {course.grading}")
+            if course_basic_info_items or course.automatic_grade_item:
+                lines.append("")
+                lines.append("[[courses.sections]]")
+                lines.append('title = "基本信息"')
+                if course_basic_info_items:
+                    lines.append("")
+                    lines.append("[[courses.sections.items]]")
+                    lines.append(
+                        "content = "
+                        + format_toml_string(chr(10).join(course_basic_info_items))
+                    )
+                if course.automatic_grade_item:
+                    lines.append("")
+                    lines.append("[[courses.sections.items]]")
+                    lines.append('source = "grades_summary"')
+                    lines.append(
+                        "content = "
+                        + format_toml_string(course.automatic_grade_item.content)
+                    )
+
             # Course-level reviews (flat items with topic)
             for review in course.reviews:
                 lines.append("")
@@ -1402,6 +1507,8 @@ def generate_toml(doc: Document) -> str:
                 for item in section.items:
                     lines.append("")
                     lines.append("[[courses.sections.items]]")
+                    if item.source:
+                        lines.append(f"source = {format_toml_string(item.source)}")
                     if item.content:
                         lines.append(f"content = {format_toml_string(item.content)}")
                     if item.topic:
@@ -1435,13 +1542,23 @@ def generate_toml(doc: Document) -> str:
     if doc.grading:
         basic_info_items.append(f"【成绩构成】: {doc.grading}")
 
-    if basic_info_items:
+    if basic_info_items or doc.automatic_grade_item:
         lines.append("")
         lines.append("[[sections]]")
         lines.append('title = "基本信息"')
-        lines.append("")
-        lines.append("[[sections.items]]")
-        lines.append(f"content = {format_toml_string(chr(10).join(basic_info_items))}")
+        if basic_info_items:
+            lines.append("")
+            lines.append("[[sections.items]]")
+            lines.append(
+                f"content = {format_toml_string(chr(10).join(basic_info_items))}"
+            )
+        if doc.automatic_grade_item:
+            lines.append("")
+            lines.append("[[sections.items]]")
+            lines.append('source = "grades_summary"')
+            lines.append(
+                f"content = {format_toml_string(doc.automatic_grade_item.content)}"
+            )
 
     # Lecturers (new schema)
     if not doc.lecturers.is_empty():
@@ -1483,6 +1600,8 @@ def generate_toml(doc: Document) -> str:
         for item in section.items:
             lines.append("")
             lines.append("[[sections.items]]")
+            if item.source:
+                lines.append(f"source = {format_toml_string(item.source)}")
             if item.content:
                 lines.append(f"content = {format_toml_string(item.content)}")
             if item.topic:
@@ -1563,6 +1682,10 @@ def main() -> int:
             content = md_path.read_text(encoding="utf-8")
             parser_obj = MarkdownParser(content)
             doc = parser_obj.parse()
+            if out_path.exists():
+                preserve_automatic_grade_items(
+                    doc, out_path.read_text(encoding="utf-8")
+                )
             toml_content = generate_toml(doc)
 
             out_path.write_text(toml_content, encoding="utf-8", newline="\n")
