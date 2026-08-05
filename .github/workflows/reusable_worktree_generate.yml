@@ -67,7 +67,7 @@ jobs:
           fi
           set -e
 
-          SCRIPTS_BASE="https://raw.githubusercontent.com/HITSZ-OpenAuto/repos-management/main/scripts"
+          SCRIPTS_BASE="https://raw.githubusercontent.com/HOAHRB/repos-management/main/scripts"
           curl -Ls -o /tmp/rdme_autogen.py "${SCRIPTS_BASE}/rdme_autogen.py"
           python3 /tmp/rdme_autogen.py \
             --toml readme.toml \
@@ -107,7 +107,7 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
-          SCRIPTS_BASE="https://raw.githubusercontent.com/HITSZ-OpenAuto/repos-management/main/scripts"
+          SCRIPTS_BASE="https://raw.githubusercontent.com/HOAHRB/repos-management/main/scripts"
           python3 /tmp/rdme_autogen.py \
             --toml readme.toml \
             --readme README.md \
@@ -141,23 +141,13 @@ jobs:
       - name: Fetch and run generate_worktree_info.py script
         run: |
           curl -Ls -o /tmp/generate_worktree_info.py \
-            https://raw.githubusercontent.com/HITSZ-OpenAuto/repos-management/main/scripts/generate_worktree_info.py
+            https://raw.githubusercontent.com/HOAHRB/repos-management/main/scripts/generate_worktree_info.py
 
           # Match generate_worktree_info.py's git identity defaults.
           git config --local user.email action@github.com
           git config --local user.name "GitHub Actions"
 
           python3 /tmp/generate_worktree_info.py
-
-      - name: Trigger Update Repositories List workflow
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
-        run: |
-          curl -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            https://api.github.com/repos/HITSZ-OpenAuto/repos-management/actions/workflows/update_repos_list.yml/dispatches \
-            -d '{"ref":"main"}'
 
       - name: Trigger workflow in hoa-moe
         if: inputs.trigger_page_build
