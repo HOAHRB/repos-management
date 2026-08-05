@@ -60,7 +60,7 @@ def cmd_rdme_md2toml(ns: argparse.Namespace) -> int:
 
 
 def cmd_repos_fetch(ns: argparse.Namespace) -> int:
-    # Fetch repos list via existing script to keep behavior identical.
+    # Fetch a temporary repository inventory via the existing script.
     # The script reads PERSONAL_ACCESS_TOKEN and ORG_NAME (dotenv supported).
     # We allow overriding ORG_NAME via CLI.
     if ns.org:
