@@ -1,5 +1,20 @@
 .env
 .DS_Store
 
+repos_list.txt
+
 __pycache__/
 *.pyc
+
+# local Python environments and test artifacts
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ty_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# local agent design and execution notes
+docs/superpowers/
+.superpowers/
