@@ -46,6 +46,8 @@ class MaintenanceScriptTests(unittest.TestCase):
 
         self.assertIn("def get_org_repos()", add_licenses)
         self.assertIn("from github import Github", pull_or_clone)
+        self.assertIn('os.getenv("ORG_NAME", "HOAHRB-Courses")', pull_or_clone)
+        self.assertNotIn("HITSZ-OpenAuto", pull_or_clone)
 
 
 if __name__ == "__main__":

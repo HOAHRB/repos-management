@@ -17,7 +17,7 @@ if http_proxy := os.getenv("HTTP_PROXY"):
 if https_proxy := os.getenv("HTTPS_PROXY"):
     os.environ["HTTPS_PROXY"] = https_proxy
 
-bypass_list = ["HITSZ-OpenAuto", "hoa-moe"]
+bypass_list = ["hoa-moe"]
 
 
 def clone_or_update_repo(repo_url: str, target_path: Path):

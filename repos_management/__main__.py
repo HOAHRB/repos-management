@@ -138,7 +138,7 @@ def cmd_workflow_trigger(ns: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="python -m repos_management",
-        description="HITSZ-OpenAuto repository management CLI",
+        description="HOAHRB course repository management CLI",
     )
 
     sp = p.add_subparsers(dest="group", required=True)
