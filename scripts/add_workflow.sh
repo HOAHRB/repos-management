@@ -8,7 +8,7 @@ PR_TITLE="${PR_MARKER} ci: disable scheduled trigger"
 PR_COMMIT_MESSAGE="ci: disable scheduled trigger"
 
 # Fetch workflow content from the online repository
-NEW_WORKFLOW_URL="https://raw.githubusercontent.com/HITSZ-OpenAuto/repos-management/refs/heads/main/call_worktree_update.yml"
+NEW_WORKFLOW_URL="https://raw.githubusercontent.com/HOAHRB/repos-management/refs/heads/main/call_worktree_update.yml"
 
 echo "Fetching workflow content from $NEW_WORKFLOW_URL"
 WORKFLOW_CONTENT=$(curl -sSLf "$NEW_WORKFLOW_URL")
@@ -25,11 +25,11 @@ process_repo() {
   local BRANCH_NAME="fix/disable-schedule-worktree"
   # Get the latest commit SHA of the main branch
   local MAIN_SHA
-  MAIN_SHA=$(gh api -H "Authorization: token $PERSONAL_ACCESS_TOKEN" "/repos/HITSZ-OpenAuto/$REPO/git/ref/heads/main" -q '.object.sha')
+  MAIN_SHA=$(gh api -H "Authorization: token $PERSONAL_ACCESS_TOKEN" "/repos/HOAHRB-Courses/$REPO/git/ref/heads/main" -q '.object.sha')
 
   # Check if the branch already exists
   local BRANCH_CHECK_RESULT
-  BRANCH_CHECK_RESULT=$(gh api -H "Authorization: token $PERSONAL_ACCESS_TOKEN" "/repos/HITSZ-OpenAuto/$REPO/git/ref/heads/$BRANCH_NAME" 2>&1)
+  BRANCH_CHECK_RESULT=$(gh api -H "Authorization: token $PERSONAL_ACCESS_TOKEN" "/repos/HOAHRB-Courses/$REPO/git/ref/heads/$BRANCH_NAME" 2>&1)
   local BRANCH_CHECK_EXIT_CODE=$?
   
   local BRANCH_EXISTS="false"
@@ -43,7 +43,7 @@ process_repo() {
     CREATE_RESULT=$(gh api -X POST \
       -H "Authorization: token $PERSONAL_ACCESS_TOKEN" \
       -H "Accept: application/vnd.github.v3+json" \
-      "/repos/HITSZ-OpenAuto/$REPO/git/refs" \
+      "/repos/HOAHRB-Courses/$REPO/git/refs" \
       -f ref="refs/heads/$BRANCH_NAME" \
       -f sha="$MAIN_SHA" 2>&1)
     local CREATE_EXIT_CODE=$?
@@ -59,7 +59,7 @@ process_repo() {
 
   # Get the SHA of the existing workflow file if it exists
   local FILE_SHA
-  FILE_SHA=$(gh api -H "Authorization: token $PERSONAL_ACCESS_TOKEN" "/repos/HITSZ-OpenAuto/$REPO/contents/.github/workflows/trigger-workflow.yml?ref=$BRANCH_NAME" -q '.sha' 2>/dev/null)
+  FILE_SHA=$(gh api -H "Authorization: token $PERSONAL_ACCESS_TOKEN" "/repos/HOAHRB-Courses/$REPO/contents/.github/workflows/trigger-workflow.yml?ref=$BRANCH_NAME" -q '.sha' 2>/dev/null)
   
   # Check if FILE_SHA is valid (not empty and not a JSON error)
   if [[ "$FILE_SHA" == *"{"* ]]; then
@@ -82,7 +82,7 @@ process_repo() {
     UPDATE_RESULT=$(gh api -X PUT \
       -H "Authorization: token $PERSONAL_ACCESS_TOKEN" \
       -H "Accept: application/vnd.github.v3+json" \
-      "/repos/HITSZ-OpenAuto/$REPO/contents/.github/workflows/trigger-workflow.yml" \
+      "/repos/HOAHRB-Courses/$REPO/contents/.github/workflows/trigger-workflow.yml" \
       -f message="$PR_COMMIT_MESSAGE" \
       -f content="$WORKFLOW_CONTENT_BASE64" \
       -f branch="$BRANCH_NAME" \
@@ -92,7 +92,7 @@ process_repo() {
     UPDATE_RESULT=$(gh api -X PUT \
       -H "Authorization: token $PERSONAL_ACCESS_TOKEN" \
       -H "Accept: application/vnd.github.v3+json" \
-      "/repos/HITSZ-OpenAuto/$REPO/contents/.github/workflows/trigger-workflow.yml" \
+      "/repos/HOAHRB-Courses/$REPO/contents/.github/workflows/trigger-workflow.yml" \
       -f message="$PR_TITLE" \
       -f content="$WORKFLOW_CONTENT_BASE64" \
       -f branch="$BRANCH_NAME" 2>&1)
@@ -109,7 +109,7 @@ process_repo() {
   # Create a pull request
   sleep 5
   local PR_RESULT
-  PR_RESULT=$(gh pr create -R "HITSZ-OpenAuto/$REPO" -B main -H "$BRANCH_NAME" -t "$PR_TITLE" -b "$PR_DESCRIPTION" 2>&1)
+  PR_RESULT=$(gh pr create -R "HOAHRB-Courses/$REPO" -B main -H "$BRANCH_NAME" -t "$PR_TITLE" -b "$PR_DESCRIPTION" 2>&1)
   local PR_EXIT_CODE=$?
   
   if [ $PR_EXIT_CODE -eq 0 ]; then

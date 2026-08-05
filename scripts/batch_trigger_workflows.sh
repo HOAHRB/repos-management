@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-ORG="HITSZ-OpenAuto"
+ORG="HOAHRB-Courses"
 REPOS_LIST="$(cd "$(dirname "$0")/.." && pwd)/repos_list.txt"
 WORKFLOW_FILE="trigger-workflow.yml"  # Name matches .github/workflows/ in each repo
 DELAY=2

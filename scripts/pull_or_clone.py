@@ -9,7 +9,7 @@ from github import Github
 load_dotenv()
 
 GITHUB_TOKEN = os.getenv("PERSONAL_ACCESS_TOKEN")
-ORGANIZATION_NAME = os.getenv("ORG_NAME", "HITSZ-OpenAuto")
+ORGANIZATION_NAME = os.getenv("ORG_NAME", "HOAHRB-Courses")
 TARGET_FOLDER = Path("./")
 
 if http_proxy := os.getenv("HTTP_PROXY"):

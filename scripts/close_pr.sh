@@ -10,7 +10,7 @@ process_repo() {
   local REPO=$1
   # Fetch number of the PR with '[automated-generated-pr]' in the title
   # By default, fetch the number of the latest PR
-  local PR_NUMBER=$(gh pr list -R "HITSZ-OpenAuto/$REPO" --search "${PR_MARKER} in:title" --json number -q '.[0].number')
+  local PR_NUMBER=$(gh pr list -R "HOAHRB-Courses/$REPO" --search "${PR_MARKER} in:title" --json number -q '.[0].number')
 
   if [ -z "$PR_NUMBER" ]; then
     echo "No open pull requests found for $REPO"
@@ -18,7 +18,7 @@ process_repo() {
   fi
 
   # Close the pull request and delete the branch
-  gh pr close -R "HITSZ-OpenAuto/$REPO" "$PR_NUMBER" --delete-branch
+  gh pr close -R "HOAHRB-Courses/$REPO" "$PR_NUMBER" --delete-branch
 
   echo "PR closed and branch deleted for $REPO"
 }

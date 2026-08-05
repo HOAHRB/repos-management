@@ -9,5 +9,5 @@ REPOS=$(cat repos_list.txt)
 # Loop through the repositories and add the secret
 for REPO in $REPOS; do
   echo "Adding secret to $REPO"
-  gh secret set PERSONAL_ACCESS_TOKEN -b"$PAT" -R "HITSZ-OpenAuto/$REPO"
+  gh secret set PERSONAL_ACCESS_TOKEN -b"$PAT" -R "HOAHRB-Courses/$REPO"
 done

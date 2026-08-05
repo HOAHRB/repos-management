@@ -27,7 +27,6 @@ def get_repos(org_name, access_token, *, session=requests):
             if not repo["name"].startswith(".")
             and not repo["archived"]
             and not repo["is_template"]
-            and repo["name"] != "HITSZ-OpenAuto"
             and not repo["name"].startswith("hoa-")
             and repo["name"] != "aextra"
             and not repo["name"].startswith("repos-")

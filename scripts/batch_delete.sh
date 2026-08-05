@@ -2,7 +2,7 @@
 # batch_delete_dirs.sh
 set -Euo pipefail  # Removed -e to prevent immediate exit on first error
 
-GITHUB_OWNER="${1:-HITSZ-OpenAuto}"     # org/user
+GITHUB_OWNER="${1:-HOAHRB-Courses}"     # org/user
 BASE_BRANCH="${2:-main}"
 DIR_TO_DELETE="${3:-.hoa}"
 SCRIPT="${SCRIPT:-./scripts/delete_dir.sh}"  # your per-repo script that opens a PR
