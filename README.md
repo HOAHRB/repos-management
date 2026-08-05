@@ -2,7 +2,7 @@
 
 # repos-management
 
-Tooling for managing course repositories in **HITSZ-OpenAuto**.
+Tooling for managing course repositories in **HOAHRB-Courses**.
 
 [English](README.md) | [中文](README.zh-CN.md)
 
@@ -12,13 +12,18 @@ Tooling for managing course repositories in **HITSZ-OpenAuto**.
 
 ## What this repo does
 
-This repository provides:
+This repository has two responsibilities:
 
-- A **single CLI** entrypoint for common operations:
+- Core course automation:
   - Convert `readme.toml` ⇄ `README.md`
-  - Bulk-trigger course repositories GitHub Actions workflows
-  - Fetch and maintain the organization repositories list (`repos_list.txt`)
-- The **reusable GitHub Actions workflow** used by course repositories to generate/update their worktrees.
+  - Provide the reusable GitHub Actions workflow used by course repositories
+  - Generate worktree metadata
+- Manual maintenance tools:
+  - Fetch a temporary course-repository list
+  - Trigger workflows or run the retained scripts in `scripts/`
+
+`repos_list.txt` is a local, temporary input. It is ignored by Git and is never
+committed, uploaded, or shared between workflow runs.
 
 The preferred way to use this repo is:
 
@@ -49,9 +54,10 @@ python3 -m repos_management rdme toml2md --input path/to/readme.toml --overwrite
 python3 -m repos_management rdme md2toml --input path/to/README.md --overwrite
 ```
 
-### 3) Trigger all course repositories workflows
+### 3) Fetch a temporary repository list and trigger workflows
 
 ```bash
+python3 -m repos_management repos fetch
 python3 -m repos_management workflow trigger --delay 2
 ```
 
@@ -109,7 +115,7 @@ Trigger each course repo workflow file (default: `trigger-workflow.yml`) via `wo
 
 ```bash
 python3 -m repos_management workflow trigger \
-  --org HITSZ-OpenAuto \
+  --org HOAHRB-Courses \
   --repos-file repos_list.txt \
   --workflow-file trigger-workflow.yml \
   --ref main \
@@ -121,7 +127,7 @@ python3 -m repos_management workflow trigger \
 Fetch repositories under an org and write `repos_list.txt`.
 
 ```bash
-python3 -m repos_management repos fetch --org HITSZ-OpenAuto
+python3 -m repos_management repos fetch --org HOAHRB-Courses
 ```
 
 ---
@@ -163,7 +169,7 @@ A typical course repository contains:
 This workflow calls the reusable workflow in this repo:
 
 ```yaml
-uses: HITSZ-OpenAuto/repos-management/.github/workflows/reusable_worktree_generate.yml@main
+uses: HOAHRB/repos-management/.github/workflows/reusable_worktree_generate.yml@main
 ```
 
 To update all course repositories after `repos-management` changes are merged to `main`, run:
@@ -174,7 +180,24 @@ python3 -m repos_management workflow trigger
 
 ---
 
-## Maintenance scripts
+## Grade source contract
+
+Course repositories own grade composition in `readme.toml`; there is no central
+grade-summary file. `jwts` may add one automatic item in a `基本信息` section:
+
+```toml
+[[sections.items]]
+source = "grades_summary"
+content = "【成绩构成】: 作业 40% | 考试 60%"
+```
+
+The same form is used under `[[courses.sections.items]]` in multi-project
+repositories. TOML → README emits a separate
+`<!-- TOML-BADGES: source="grades_summary" -->` group. README → TOML rebuilds
+only manual `basic_info` badges and preserves the existing source-marked item;
+editing automatic badges in README cannot replace the item written by `jwts`.
+
+## Manual maintenance scripts
 
 Some power tools remain in `./scripts/` (use with care):
 
@@ -184,7 +207,7 @@ Some power tools remain in `./scripts/` (use with care):
 - `add_secrets.sh` - 批量添加 GitHub secrets
 - `approve_pr.sh` - 批量审核通过 PR
 - `close_pr.sh` - 批量关闭 PR
-- `batch_trigger_workflows.sh` - 批量触发工作流（已废弃，使用 CLI）
+- `batch_trigger_workflows.sh` - 批量触发工作流
 
 ### File Operations
 - `delete_dir.sh` - 删除仓库中的目录
@@ -200,15 +223,5 @@ Some power tools remain in `./scripts/` (use with care):
 - `pull_or_clone.py` - Pull or clone repositories
 - `fetch_repos.py` - Fetch repositories list
 
-### Legacy scripts (deprecated, functionality merged into CLI)
-
-The following scripts have been consolidated into the CLI (`python3 -m repos_management`):
-
-| Legacy Script | Current CLI Command |
-|--------------|---------------------|
-| `batch_trigger_workflows.sh` | `python3 -m repos_management workflow trigger` |
-
-If you need the original scripts, they are available in git history:
-```bash
-git show <commit>:scripts/add_workflow.sh
-```
+The scripts retain their existing arguments and behavior. List-consuming scripts
+expect a workspace-local `repos_list.txt` generated with `repos fetch`.

@@ -2,7 +2,7 @@
 
 # repos-management
 
-用于管理 **HITSZ-OpenAuto** 组织下课程仓库的工具集。
+用于管理 **HOAHRB-Courses** 组织下课程仓库的工具集。
 
 [中文](README.zh-CN.md) | [English](README.md)
 
@@ -12,13 +12,17 @@
 
 ## 本仓库做什么
 
-本仓库提供：
+本仓库有两类职责：
 
-- 一个统一的 **Python CLI** 入口，用于常用操作：
+- 核心课程自动化：
   - `readme.toml` ⇄ `README.md` 双向转换
-  - 批量触发课程仓库 GitHub Actions workflows
-  - 获取/维护组织仓库列表（`repos_list.txt`）
-- 课程仓库用于生成/更新 worktree 的 **reusable GitHub Actions workflow**。
+  - 为课程仓库提供 reusable GitHub Actions workflow
+  - 生成 worktree 元数据
+- 人工维护工具：
+  - 获取临时课程仓库名单
+  - 触发工作流，或运行 `scripts/` 中保留的脚本
+
+`repos_list.txt` 是本地临时输入，已被 Git 忽略，不会提交、上传，也不会在不同 workflow run 之间共享。
 
 推荐使用方式：
 
@@ -49,9 +53,10 @@ python3 -m repos_management rdme toml2md --input path/to/readme.toml --overwrite
 python3 -m repos_management rdme md2toml --input path/to/README.md --overwrite
 ```
 
-### 3) 批量触发所有课程仓库 workflow
+### 3) 获取临时名单并批量触发 workflow
 
 ```bash
+python3 -m repos_management repos fetch
 python3 -m repos_management workflow trigger --delay 2
 ```
 
@@ -109,7 +114,7 @@ python3 -m repos_management rdme md2toml --input <文件或目录> [--output <�
 
 ```bash
 python3 -m repos_management workflow trigger \
-  --org HITSZ-OpenAuto \
+  --org HOAHRB-Courses \
   --repos-file repos_list.txt \
   --workflow-file trigger-workflow.yml \
   --ref main \
@@ -121,7 +126,7 @@ python3 -m repos_management workflow trigger \
 拉取组织下仓库列表并写入 `repos_list.txt`。
 
 ```bash
-python3 -m repos_management repos fetch --org HITSZ-OpenAuto
+python3 -m repos_management repos fetch --org HOAHRB-Courses
 ```
 
 ---
@@ -163,7 +168,7 @@ content = "..."  # 可选
 它会调用本仓库的 reusable workflow：
 
 ```yaml
-uses: HITSZ-OpenAuto/repos-management/.github/workflows/reusable_worktree_generate.yml@main
+uses: HOAHRB/repos-management/.github/workflows/reusable_worktree_generate.yml@main
 ```
 
 当 `repos-management` 的改动合并到 `main` 后，如需让所有课程仓库更新，可运行：
@@ -174,7 +179,20 @@ python3 -m repos_management workflow trigger
 
 ---
 
-## 维护脚本
+## 成绩构成的来源标记
+
+成绩构成由课程仓库的 `readme.toml` 负责维护，不再使用中央成绩汇总文件。`jwts` 可以在“基本信息”节中写入一条自动项：
+
+```toml
+[[sections.items]]
+source = "grades_summary"
+content = "【成绩构成】: 作业 40% | 考试 60%"
+```
+
+multi-project 仓库使用同样的形式，只是路径为 `[[courses.sections.items]]`。TOML → README 会单独生成
+`<!-- TOML-BADGES: source="grades_summary" -->` 分组；README → TOML 只重建人工 `basic_info` 徽章，并保留原有的自动项。因此，直接编辑 README 中的自动徽章不会覆盖 `jwts` 写入的内容。
+
+## 人工维护脚本
 
 部分"强力工具"仍保留在 `./scripts/` 下（谨慎使用）：
 
@@ -184,7 +202,7 @@ python3 -m repos_management workflow trigger
 - `add_secrets.sh` - 批量添加 GitHub secrets
 - `approve_pr.sh` - 批量审核通过 PR
 - `close_pr.sh` - 批量关闭 PR
-- `batch_trigger_workflows.sh` - 批量触发工作流（已废弃，使用 CLI）
+- `batch_trigger_workflows.sh` - 批量触发工作流
 
 ### 文件操作
 - `delete_dir.sh` - 删除仓库中的目录
@@ -200,10 +218,4 @@ python3 -m repos_management workflow trigger
 - `pull_or_clone.py` - Pull 或 clone 仓库
 - `fetch_repos.py` - 获取仓库列表
 
-### 已废弃的脚本（功能已合并到 CLI）
-
-以下脚本已整合到 CLI (`python3 -m repos_management`)：
-
-| 废弃脚本 | 当前 CLI 命令 |
-|---------|--------------|
-| `batch_trigger_workflows.sh` | `python3 -m repos_management workflow trigger` |
+这些脚本的参数和行为保持不变。依赖名单的脚本会读取工作目录中的 `repos_list.txt`；先用 `repos fetch` 生成即可。
