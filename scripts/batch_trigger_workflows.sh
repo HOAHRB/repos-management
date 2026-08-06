@@ -46,9 +46,6 @@ while IFS= read -r repo; do
   # Skip blank lines and comments
   [[ -z "$repo" || "$repo" == \#* ]] && continue
 
-  # Skip non-course repos
-  [[ "$repo" == "course-template" ]] && { ((skipped++)); continue; }
-
   total=$((total + 1))
   url="https://api.github.com/repos/${ORG}/${repo}/actions/workflows/${WORKFLOW_FILE}/dispatches"
 

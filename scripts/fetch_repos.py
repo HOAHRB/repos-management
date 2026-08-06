@@ -27,10 +27,6 @@ def get_repos(org_name, access_token, *, session=requests):
             if not repo["name"].startswith(".")
             and not repo["archived"]
             and not repo["is_template"]
-            and not repo["name"].startswith("hoa-")
-            and repo["name"] != "aextra"
-            and not repo["name"].startswith("repos-")
-            and not repo["name"].startswith("dev-")
         ]
         repos.extend(repo["name"] for repo in data)
         url = response.links.get("next", {}).get("url")

@@ -9,7 +9,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
-DEFAULT_REPOS_LIST = REPO_ROOT / "repos_list.txt"
+DEFAULT_REPOS_LIST = Path("repos_list.txt")
 
 
 def _run_python_script(script_name: str, args: list[str]) -> int:
@@ -68,7 +68,7 @@ def cmd_repos_fetch(ns: argparse.Namespace) -> int:
     if ns.token:
         os.environ["PERSONAL_ACCESS_TOKEN"] = ns.token
 
-    # Script writes repos_list.txt to repo root.
+    # Script writes repos_list.txt to the current working directory.
     return _run_python_script("fetch_repos.py", [])
 
 
@@ -95,10 +95,6 @@ def cmd_workflow_trigger(ns: argparse.Namespace) -> int:
             repo = raw.strip()
             if not repo or repo.startswith("#"):
                 continue
-            if repo == "course-template":
-                skipped += 1
-                continue
-
             total += 1
             url = f"https://api.github.com/repos/{org}/{repo}/actions/workflows/{workflow_file}/dispatches"
             if ns.dry_run:
@@ -175,7 +171,9 @@ def build_parser() -> argparse.ArgumentParser:
     repos_sp = repos.add_subparsers(dest="command", required=True)
 
     fetch = repos_sp.add_parser("fetch", help="Fetch org repos into repos_list.txt")
-    fetch.add_argument("--org", default="HOAHRB-Courses", help="GitHub org name")
+    fetch.add_argument(
+        "--org", default=None, help="GitHub org name (default from ORG_NAME env/.env)"
+    )
     fetch.add_argument(
         "--token",
         default=None,

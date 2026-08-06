@@ -4,6 +4,11 @@ import os
 import requests
 from dotenv import load_dotenv
 
+if __package__:
+    from .fetch_repos import get_repos
+else:
+    from fetch_repos import get_repos
+
 # Load the environment variables from the .env file
 load_dotenv()
 
@@ -21,10 +26,6 @@ org_name = os.getenv("ORG_NAME")
 license_url = (
     "https://raw.githubusercontent.com/GIST-CSBL/DeepConv-DTI/master/CC-BY-NC-SA-4.0"
 )
-
-# Repositories to exclude
-repos_to_exclude = [".github", "hoa.moe"]
-
 
 # Function to create a branch
 def create_branch(repo_name, branch_name, base_commit, license_content):
@@ -134,20 +135,7 @@ def get_license_content(url):
 
 # Function to get list of repositories in the organization
 def get_org_repos():
-    url = f"{base_url}/orgs/{org_name}/repos"
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json",
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        repos = [repo["name"] for repo in response.json()]
-        # Exclude repositories
-        repos = [repo for repo in repos if repo not in repos_to_exclude]
-        return repos
-    else:
-        print(f"Failed to fetch repositories: {response.text}")
-        return []
+    return get_repos(org_name, token)
 
 
 # Main function

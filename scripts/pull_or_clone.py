@@ -2,23 +2,17 @@ import os
 import subprocess
 from pathlib import Path
 
-from dotenv import load_dotenv
-from github import Github
+if __package__:
+    from .fetch_repos import ORG_NAME, PERSONAL_ACCESS_TOKEN, get_repos
+else:
+    from fetch_repos import ORG_NAME, PERSONAL_ACCESS_TOKEN, get_repos
 
-# Load environment variables from .env file
-load_dotenv()
-
-GITHUB_TOKEN = os.getenv("PERSONAL_ACCESS_TOKEN")
-ORGANIZATION_NAME = os.getenv("ORG_NAME", "HOAHRB-Courses")
 TARGET_FOLDER = Path("./")
 
 if http_proxy := os.getenv("HTTP_PROXY"):
     os.environ["HTTP_PROXY"] = http_proxy
 if https_proxy := os.getenv("HTTPS_PROXY"):
     os.environ["HTTPS_PROXY"] = https_proxy
-
-bypass_list = ["hoa-moe"]
-
 
 def clone_or_update_repo(repo_url: str, target_path: Path):
     """克隆或更新仓库"""
@@ -43,17 +37,10 @@ def clone_or_update_repo(repo_url: str, target_path: Path):
 
 
 def main():
-    g = Github(GITHUB_TOKEN)
-    org = g.get_organization(ORGANIZATION_NAME)
-
     TARGET_FOLDER.mkdir(parents=True, exist_ok=True)
 
-    for repo in org.get_repos():
-        repo_name = repo.name
-        if repo_name in bypass_list:
-            print(f"Skipping {repo_name}")
-            continue
-        repo_url = repo.ssh_url
+    for repo_name in get_repos(ORG_NAME, PERSONAL_ACCESS_TOKEN):
+        repo_url = f"git@github.com:{ORG_NAME}/{repo_name}.git"
         target_path = TARGET_FOLDER / repo_name
 
         try:

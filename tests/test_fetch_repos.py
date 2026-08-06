@@ -46,6 +46,10 @@ class FetchReposTests(unittest.TestCase):
                         {"name": ".private", "archived": False, "is_template": False},
                         {"name": "OLD", "archived": True, "is_template": False},
                         {"name": "template", "archived": False, "is_template": True},
+                        {"name": "hoa-moe", "archived": False, "is_template": False},
+                        {"name": "repos-helper", "archived": False, "is_template": False},
+                        {"name": "dev-tool", "archived": False, "is_template": False},
+                        {"name": "aextra", "archived": False, "is_template": False},
                     ],
                     next_url="page-2",
                 ),
@@ -57,7 +61,7 @@ class FetchReposTests(unittest.TestCase):
 
         self.assertEqual(
             get_repos("HOAHRB-Courses", "token", session=session),
-            ["CS101", "MATH101"],
+            ["CS101", "MATH101", "aextra", "dev-tool", "hoa-moe", "repos-helper"],
         )
         self.assertEqual(session.urls, [
             "https://api.github.com/orgs/HOAHRB-Courses/repos",
