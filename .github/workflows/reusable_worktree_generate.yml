@@ -4,14 +4,14 @@ on:
   workflow_call:
     inputs:
       trigger_page_build:
-        description: 'Set to true to trigger the whole hoa-moe page build workflow'
+        description: 'Deprecated compatibility input; no longer used'
         required: false
         default: false
         type: boolean
     secrets:
       PAT:
-        description: 'Personal Access Token'
-        required: true
+        description: 'Deprecated compatibility secret; GITHUB_TOKEN is used instead'
+        required: false
 
 concurrency:
   group: rdme-worktree-generate-${{ github.repository }}-${{ github.ref }}
@@ -31,7 +31,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.PAT }}
 
       - name: Sync with latest main (main only)
         if: github.ref == 'refs/heads/main'

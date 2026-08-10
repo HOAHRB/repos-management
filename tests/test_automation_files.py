@@ -22,7 +22,12 @@ class AutomationFileTests(unittest.TestCase):
             "reusable_worktree_generate.yml@main",
             caller,
         )
-        self.assertIn("HITSZ-OpenAuto/hoa-moe", reusable)
+        self.assertNotIn("HITSZ-OpenAuto/hoa-moe", reusable)
+        self.assertNotIn("token: ${{ secrets.PAT }}", reusable)
+        self.assertIn("required: false", reusable)
+        self.assertNotIn("PERSONAL_ACCESS_TOKEN", caller)
+        self.assertNotIn("pull-requests: write", caller)
+        self.assertNotIn("trigger_page_build:", caller)
 
 
 if __name__ == "__main__":

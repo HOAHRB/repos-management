@@ -10,12 +10,4 @@ jobs:
     uses: HOAHRB/repos-management/.github/workflows/reusable_worktree_generate.yml@main
     permissions:
       contents: write
-      pull-requests: write
-
-    with:
-      # trigger_page_build == true only when pushing to main branch
-      trigger_page_build: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-
-    secrets:
-      PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
