@@ -2,16 +2,6 @@ name: Reusable Workflow To Update Worktree and Trigger Workflow
 
 on:
   workflow_call:
-    inputs:
-      trigger_page_build:
-        description: 'Deprecated compatibility input; no longer used'
-        required: false
-        default: false
-        type: boolean
-    secrets:
-      PAT:
-        description: 'Deprecated compatibility secret; GITHUB_TOKEN is used instead'
-        required: false
 
 concurrency:
   group: rdme-worktree-generate-${{ github.repository }}-${{ github.ref }}
